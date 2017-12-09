@@ -15,7 +15,7 @@ final class Query
         *
         * @author         Martin Latter <copysense.co.uk>
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.05
+        * @version        0.06
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -45,6 +45,8 @@ final class Query
 
     public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, $aPlaceholders = true): array
     {
+        $bParamError = false;
+
         if (is_null($oConnection))
         {
             die(__METHOD__ . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL);
@@ -53,9 +55,9 @@ final class Query
         {
             die(__METHOD__ . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL);
         }
-        else if (stripos($sQuery, 'select ') === false)
+        else if (stripos($sQuery, 'SELECT ') === false)
         {
-            die(__METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT statement found in $sQuery. (' . __FILE__ . ')' . self::$sEOL);
+            die(__METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
         }
         else if (empty($aParamValues) && $aPlaceholders)
         {
@@ -67,9 +69,15 @@ final class Query
             {
                 if (strpos($sQuery, $sParameter) === false)
                 {
-                    die(__METHOD__ . '(): bound parameter array values and SQL mismatch. (' . __FILE__ . ')' . self::$sEOL);
+                    $bParamError = true;
+                    break;
                 }
             }
+        }
+
+        if ($bParamError)
+        {
+            echo __METHOD__ . '(): bound parameter array values and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
         }
 
         $iNumRows = 0;
@@ -124,7 +132,9 @@ final class Query
 
     public static function main(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, string $sAction = ''): array
     {
-        self::checkArgs(__METHOD__, func_get_args());
+        $sAction = explode('::', $sAction)[1];
+
+        self::checkArgs($sAction, func_get_args());
 
         $iNumUpdates = 0;
         $bUpdate = false;
@@ -187,7 +197,7 @@ final class Query
 
     public static function insert(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null): array
     {
-        return self::main($oConnection, $sQuery, $aParamValues, 'insert');
+        return self::main($oConnection, $sQuery, $aParamValues, __METHOD__);
     }
 
 
@@ -197,7 +207,7 @@ final class Query
 
     public static function update(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null): array
     {
-        return self::main($oConnection, $sQuery, $aParamValues, 'update');
+        return self::main($oConnection, $sQuery, $aParamValues, __METHOD__);
     }
 
 
@@ -207,7 +217,7 @@ final class Query
 
     public static function delete(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null): array
     {
-        return self::main($oConnection, $sQuery, $aParamValues, 'delete');
+        return self::main($oConnection, $sQuery, $aParamValues, __METHOD__);
     }
 
 
@@ -271,46 +281,54 @@ final class Query
         }
         else if (empty($aArgs[2]))
         {
-            die(__METHOD__ . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL);
+            die($sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL);
         }
         else if (empty($aArgs[3]))
         {
-            die(__METHOD__ . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL);
+            die($sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL);
         }
 
-        switch($aArgs[3])
+        $bParamError = false;
+
+        switch ($sMethodName)
         {
             case 'insert':
-                if (stripos($aArgs[1], 'insert ') === false)
+                if (stripos($aArgs[1], 'INSERT ') === false)
                 {
-                    die(__METHOD__ . '(): SQL may be wrong - calling insert method, but no INSERT statement found in $sQuery. (' . __FILE__ . ')' . self::$sEOL);
+                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling insert method, but no INSERT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
                 }
             break;
 
             case 'update':
-                if (stripos($aArgs[1], 'update ') === false)
+                if (stripos($aArgs[1], 'UPDATE ') === false)
                 {
-                    die(__METHOD__ . '(): SQL may be wrong - calling update method, but no UPDATE statement found in $sQuery. (' . __FILE__ . ')' . self::$sEOL);
+                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling update method, but no UPDATE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
                 }
             break;
 
             case 'delete':
-                if (stripos($aArgs[1], 'delete ') === false)
+                if (stripos($aArgs[1], 'DELETE ') === false)
                 {
-                    die(__METHOD__ . '(): SQL may be wrong - calling delete method, but no DELETE statement found in $sQuery. (' . __FILE__ . ')' . self::$sEOL);
+                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling delete method, but no DELETE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
                 }
             break;
 
             default:
-                die(__METHOD__ . '(): unrecognised action!');
+                die(__CLASS__ . '::' . $sMethodName . '(): unrecognised action!');
         }
 
         foreach ($aArgs[2] as $sParameter => $v)
         {
             if (strpos($aArgs[1], $sParameter) === false)
             {
-                die(__METHOD__ . '(): bound parameter array values and SQL mismatch. (' . __FILE__ . ')' . self::$sEOL);
+                $bParamError = true;
+                break;
             }
+        }
+
+        if ($bParamError)
+        {
+            echo __CLASS__ . '::' . $sMethodName . '(): bound parameter array values and SQL mismatch. (' . __FILE__ . ')' . self::$sEOL;
         }
     }
 
