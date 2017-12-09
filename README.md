@@ -7,21 +7,32 @@
 
 ## Purpose
 
-Created to reduce the amount of PDO prepared statement boilerplate code needed in a legacy MySQL website conversion.
+Reduce the amount of PDO prepared statement boilerplate code needed in a legacy MySQL website conversion.
 
 
-## Intentions
+## Aims
 
 + Reduce repetitive inline code.
 + Bind prepared statement parameters reasonably easily, with PDO data-type constants handled automatically.
-+ Flexibly support both simple and complex SQL statements.
++ Allow SQL queries of varying complexity with varying numbers of bound parameters.
 + Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
-+ Allow the use of multiple database connections.
++ Override the requirement for bound parameters in SELECT queries.
++ Capture some erroneous calls before MySQL or PHP start complaining.
++ Pass different database connections in separate queries.
 
 
 ## Examples
 
         require('Query.class.php');
+
+        # set-up '$conn' PDO connection
+        $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
+        try {
+            $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }
+        catch (PDOException $e) {die($e->getMessage());}
+
 
 ### SELECT
 
@@ -35,16 +46,74 @@ Created to reduce the amount of PDO prepared statement boilerplate code needed i
                 echo $aRow['name'];
                 ...
 
+
+        /* no parameters */
+        $q = 'SELECT name, email FROM users';
+        $aR = Query::select($conn, $q, null, true, false);
+
+        Array
+        (
+            [results] => Array
+            (
+                [0] => Array
+                (
+                    [id] => 1
+                    [name] => ...
+                    [email] => ...
+                )
+
+                [1] => Array
+                (
+                    [id] => 2
+                    [name] => ...
+                    [email] => ...
+                )
+
+                ...
+            )
+
+            [numrows] => 7
+        )
+
+
+### INSERT
+
+        $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+
+        Array
+        (
+            [insert] => true          # update succeeded
+            [numinserts] => 1         # 1 insert
+            [insertid] => 101         # lastInsertId()
+            [error] => null           # no errors
+        )
+
+
 ### UPDATE
 
-        $aU = Query::update($conn, 'UPDATE users SET email = :email WHERE name = :name', [ ':email' => $email, ':name' => $name ]);
+        $aU = Query::update($conn, 'UPDATE users SET email = :e WHERE name = :n', [ ':e' => $email, ':n' => $name ]);
+           /* parameter names can be anything providing SQL and array definitions align */
 
         if ($aU['update'])
         {
             ...
 
 
-### *@TODO* ...
+### DELETE
+
+        $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
+           /* use a literal value in this example to bind instead of variable */
+
+        Array
+        (
+            [delete] => true
+            [numdeletes] => 2
+            [error] => null
+        )
+
+
+        # close connection
+        $conn = null;
 
 
 ## License
