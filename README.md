@@ -36,7 +36,8 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ### SELECT
 
-        $aR = Query::select($conn, 'SELECT name, email FROM users WHERE uid = :uid', [ ':uid' => $user_id ], false);
+        $q = 'SELECT name, email FROM users WHERE uid = :uid';
+        $aR = Query::select($conn, $q, [ ':uid' => $user_id ], false);
             /* 'false' used to return single result row, as in query intention; default is 'true' returning multiple rows from a suitable query */
 
         if ($aR['results'])
@@ -92,7 +93,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### UPDATE
 
         $aU = Query::update($conn, 'UPDATE users SET email = :e WHERE name = :n', [ ':e' => $email, ':n' => $name ]);
-           /* parameter names can be anything providing SQL and array definitions align */
+           /* parameter names can be anything providing SQL and array definitions match */
 
         if ($aU['update'])
         {
@@ -102,7 +103,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### DELETE
 
         $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
-           /* use a literal value in this example to bind instead of variable */
+           /* use a literal value to bind instead of a variable */
 
         Array
         (
@@ -111,6 +112,17 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
             [error] => null
         )
 
+
+### LIKES
+
+        $q = 'SELECT * FROM users WHERE name LIKE :name';
+        $like = 'jon' . '%';
+        $binds = [':name' => $like];
+
+        $aR = Query::select($conn, $q, $binds);
+
+
+### CLOSE
 
         # close connection
         $conn = null;
