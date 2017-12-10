@@ -2,7 +2,7 @@
 # MySQL PDO
 
 
-#### Simple PHP MySQL-PDO prepared statement helper class.
+#### PHP MySQL-PDO prepared statement helper class.
 
 
 ## Purpose
@@ -23,9 +23,10 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ## Examples
 
+**Set-up**
+
         require('Query.class.php');
 
-        # set-up '$conn' PDO connection
         $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
         try {
             $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
@@ -122,9 +123,8 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
         $aR = Query::select($conn, $q, $binds);
 
 
-### CLOSE
+**Close**
 
-        # close connection
         $conn = null;
 
 
