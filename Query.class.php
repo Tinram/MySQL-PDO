@@ -15,7 +15,7 @@ final class Query
         *
         * @author         Martin Latter <copysense.co.uk>
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.06
+        * @version        0.07
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -24,7 +24,8 @@ final class Query
     private static $sEOL = (PHP_SAPI === 'cli') ? PHP_EOL : '<br>';
 
 
-    public function __construct() {
+    public function __construct()
+    {
         echo '<p style="#c00">Warning: this is a static class.</p>';
     }
 
@@ -38,12 +39,12 @@ final class Query
         *           else null if no parameters used in query
         *           multiple instances of a parameter are bound from a single key
         * @param   bool $bFetchAll, true: fetch complete resultset; false: fetch just one row
-        * @param   bool $aPlaceholders, false: skip binding of parameters if query has none
+        * @param   bool $bPlaceholders, false: skip binding of parameters if SQL query has none
         *
         * @return  array [ 'results' => array | false, 'numrows' => integer ]
     */
 
-    public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, $aPlaceholders = true): array
+    public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, bool $bPlaceholders = true): array
     {
         $bParamError = false;
 
@@ -59,11 +60,11 @@ final class Query
         {
             die(__METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
         }
-        else if (empty($aParamValues) && $aPlaceholders)
+        else if (empty($aParamValues) && $bPlaceholders)
         {
             die(__METHOD__ . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL);
         }
-        else if ($aPlaceholders)
+        else if ($bPlaceholders)
         {
             foreach ($aParamValues as $sParameter => $v)
             {
@@ -86,7 +87,7 @@ final class Query
         {
             $oStmt = $oConnection->prepare($sQuery);
 
-            if ($aPlaceholders) # provides option to skip if query has no placeholders
+            if ($bPlaceholders) # provides option to skip if query has no placeholders
             {
                 foreach ($aParamValues as $param => &$value)
                 {
@@ -331,5 +332,4 @@ final class Query
             echo __CLASS__ . '::' . $sMethodName . '(): bound parameter array values and SQL mismatch. (' . __FILE__ . ')' . self::$sEOL;
         }
     }
-
 }
