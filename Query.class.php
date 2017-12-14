@@ -15,7 +15,7 @@ final class Query
         *
         * @author         Martin Latter <copysense.co.uk>
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.07
+        * @version        0.08
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -26,7 +26,7 @@ final class Query
 
     public function __construct()
     {
-        echo '<p style="#c00">Warning: this is a static class.</p>';
+        echo __METHOD__ . '() ** WARNING ** this is a static class.' . self::$sEOL;
     }
 
 
@@ -50,19 +50,19 @@ final class Query
 
         if (is_null($oConnection))
         {
-            die(__METHOD__ . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo __METHOD__ . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($sQuery))
         {
-            die(__METHOD__ . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo __METHOD__ . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (stripos($sQuery, 'SELECT ') === false)
         {
-            die(__METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
+            echo __METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aParamValues) && $bPlaceholders)
         {
-            die(__METHOD__ . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo __METHOD__ . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if ($bPlaceholders)
         {
@@ -274,19 +274,19 @@ final class Query
     {
         if (is_null($aArgs[0]))
         {
-            die($sMethodName . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo $sMethodName . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[1]))
         {
-            die($sMethodName . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo $sMethodName . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[2]))
         {
-            die($sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo $sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[3]))
         {
-            die($sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL);
+            echo $sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
 
         $bParamError = false;
@@ -296,26 +296,26 @@ final class Query
             case 'insert':
                 if (stripos($aArgs[1], 'INSERT ') === false)
                 {
-                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling insert method, but no INSERT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
+                    echo __CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling insert method, but no INSERT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
                 }
             break;
 
             case 'update':
                 if (stripos($aArgs[1], 'UPDATE ') === false)
                 {
-                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling update method, but no UPDATE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
+                    echo __CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling update method, but no UPDATE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
                 }
             break;
 
             case 'delete':
                 if (stripos($aArgs[1], 'DELETE ') === false)
                 {
-                    die(__CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling delete method, but no DELETE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL);
+                    echo __CLASS__ . '::' . $sMethodName . '(): SQL may be wrong - calling delete method, but no DELETE keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
                 }
             break;
 
             default:
-                die(__CLASS__ . '::' . $sMethodName . '(): unrecognised action!');
+                echo __CLASS__ . '::' . $sMethodName . '(): unrecognised action!';
         }
 
         foreach ($aArgs[2] as $sParameter => $v)
