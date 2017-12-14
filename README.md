@@ -16,12 +16,37 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 + Bind prepared statement parameters reasonably easily, with PDO data-type constants handled automatically.
 + Allow SQL queries of varying complexity with varying numbers of bound parameters.
 + Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
-+ Override the requirement for bound parameters in SELECT queries.
++ Override the requirement for bound parameters in SELECT queries which have no variable inputs.
 + Capture some erroneous calls before MySQL or PHP start complaining.
-+ Pass different database connections in separate queries.
++ Use different database connections in separate queries.
 
 
-## Examples
+## Conversion Example
+
+### Legacy Code
+
+        $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
+
+        if (mysql_query($q))
+        {
+            if (mysql_num_rows($q) > 0)
+            {
+                $t = mysql_result($q, 0, 'template');
+            }
+        }
+
+### Conversion
+
+        $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
+        $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
+
+        if ($r['numrows'] > 0)
+        {
+            $t = $r['results']['template'];
+        }
+
+
+## CRUD Examples
 
 **Set-up**
 
@@ -104,7 +129,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### DELETE
 
         $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
-           /* use a literal value to bind instead of a variable */
+           /* literal value bound instead of a variable */
 
         Array
         (
@@ -118,7 +143,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
         $q = 'SELECT * FROM users WHERE name LIKE :name';
         $like = 'jon' . '%';
-        $binds = [':name' => $like];
+        $binds = [ ':name' => $like ];
 
         $aR = Query::select($conn, $q, $binds);
 
