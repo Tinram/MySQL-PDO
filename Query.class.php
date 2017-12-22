@@ -15,7 +15,7 @@ final class Query
         *
         * @author         Martin Latter <copysense.co.uk>
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.09
+        * @version        0.10
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -285,19 +285,19 @@ final class Query
     {
         if (is_null($aArgs[0]))
         {
-            echo $sMethodName . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
+            echo __CLASS__ . '::' . $sMethodName . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[1]))
         {
-            echo $sMethodName . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
+            echo __CLASS__ . '::' . $sMethodName . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[2]))
         {
-            echo $sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
+            echo __CLASS__ . '::' . $sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
         else if (empty($aArgs[3]))
         {
-            echo $sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL;
+            echo __CLASS__ . '::' . $sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
 
         $aParamErrors = [];
