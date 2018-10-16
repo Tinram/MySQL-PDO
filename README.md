@@ -18,7 +18,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 + Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
 + Override the requirement for bound parameters in SELECT queries which have no variable inputs.
 + Capture some erroneous calls before MySQL or PHP start complaining.
-+ Use different database connections in separate queries.
++ Able to use different database connections in separate queries.
 
 
 ## Conversion Example
@@ -139,13 +139,29 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
         )
 
 
-### LIKES
+### LIKE
 
         $q = 'SELECT * FROM users WHERE name LIKE :name';
         $like = 'jon' . '%';
         $binds = [ ':name' => $like ];
 
         $aR = Query::select($conn, $q, $binds);
+
+
+### TRANSACTION
+
+        try
+        {
+            $conn->beginTransaction();
+            $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+            $aI2 = Query::insert($conn, 'INSERT INTO messages VALUES (m_id, message) VALUES (:m_id, :message)', [ ':m_id' => $aI['insertid'], ':message' => $message ]);
+            $conn->commit();
+        }
+        catch (PDOException $e)
+        {
+            echo $e->getMessage();
+            $conn->rollback();
+        }
 
 
 **Close**
