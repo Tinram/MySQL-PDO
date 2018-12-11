@@ -43,10 +43,10 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
     $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
     $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
 
-     if ($r['numrows'] > 0)
-     {
-         $t = $r['results']['template'];
-     }
+    if ($r['numrows'] > 0)
+    {
+        $t = $r['results']['template'];
+    }
 ```
 
 
@@ -58,11 +58,16 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
     require('Query.class.php');
 
     $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
-    try {
+
+    try
+    {
         $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        }
-    catch (PDOException $e) {die($e->getMessage());}
+        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
+    catch (PDOException $e)
+    {
+        die($e->getMessage());
+    }
 ```
 
 
@@ -79,7 +84,6 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
         {
             echo $aRow['name'];
             ...
-
 
     /* no parameters */
     $q = 'SELECT name, email FROM users';
