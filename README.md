@@ -25,25 +25,31 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ### Legacy Code
 
-        $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
+```php
+<?php
+    $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
 
-        if (mysql_query($q))
+    if (mysql_query($q))
+    {
+        if (mysql_num_rows($q) > 0)
         {
-            if (mysql_num_rows($q) > 0)
-            {
-                $t = mysql_result($q, 0, 'template');
-            }
+            $t = mysql_result($q, 0, 'template');
         }
+    }
+?>
+```
 
 ### Conversion
 
-        $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
-        $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
+```php
+    $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
+    $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
 
-        if ($r['numrows'] > 0)
-        {
-            $t = $r['results']['template'];
-        }
+     if ($r['numrows'] > 0)
+     {
+         $t = $r['results']['template'];
+     }
+```
 
 
 ## CRUD Examples
