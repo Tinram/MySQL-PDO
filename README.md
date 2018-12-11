@@ -26,7 +26,6 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### Legacy Code
 
 ```php
-<?php
     $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
 
     if (mysql_query($q))
@@ -36,7 +35,6 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
             $t = mysql_result($q, 0, 'template');
         }
     }
-?>
 ```
 
 ### Conversion
@@ -56,33 +54,37 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 **Set-up**
 
-        require('Query.class.php');
+```php
+    require('Query.class.php');
 
-        $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
-        try {
-            $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
+    $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
+    try {
+        $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
-        catch (PDOException $e) {die($e->getMessage());}
+    catch (PDOException $e) {die($e->getMessage());}
+```
 
 
 ### SELECT
 
-        $q = 'SELECT name, email FROM users WHERE uid = :uid';
-        $aR = Query::select($conn, $q, [ ':uid' => $user_id ], false);
-            /* 'false' used to return single result row, as in query intention; default is 'true' returning multiple rows from a suitable query */
+```php
+    $q = 'SELECT name, email FROM users WHERE uid = :uid';
+    $aR = Query::select($conn, $q, [ ':uid' => $user_id ], false);
+        /* 'false' used to return single result row, as in query intention; default is 'true' returning multiple rows from a suitable query */
 
-        if ($aR['results'])
+    if ($aR['results'])
+    {
+        foreach ($aR as $aRow)
         {
-            foreach ($aR as $aRow)
-            {
-                echo $aRow['name'];
-                ...
+            echo $aRow['name'];
+            ...
 
 
-        /* no parameters */
-        $q = 'SELECT name, email FROM users';
-        $aR = Query::select($conn, $q, null, true, false);
+    /* no parameters */
+    $q = 'SELECT name, email FROM users';
+    $aR = Query::select($conn, $q, null, true, false);
+```
 
         Array
         (
@@ -111,7 +113,9 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ### INSERT
 
-        $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+```php
+    $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+```
 
         Array
         (
@@ -124,18 +128,22 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ### UPDATE
 
-        $aU = Query::update($conn, 'UPDATE users SET email = :e WHERE name = :n', [ ':e' => $email, ':n' => $name ]);
-           /* parameter names can be anything providing SQL and array definitions match */
+```php
+    $aU = Query::update($conn, 'UPDATE users SET email = :e WHERE name = :n', [ ':e' => $email, ':n' => $name ]);
+        /* parameter names can be anything providing SQL and array definitions match */
 
-        if ($aU['update'])
-        {
-            ...
+    if ($aU['update'])
+    {
+        ...
+```
 
 
 ### DELETE
 
-        $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
-           /* literal value bound instead of a variable */
+```php
+    $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
+        /* literal value bound instead of a variable */
+```
 
         Array
         (
@@ -147,32 +155,38 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ### LIKE
 
-        $q = 'SELECT * FROM users WHERE name LIKE :name';
-        $like = 'jon' . '%';
-        $binds = [ ':name' => $like ];
+```php
+    $q = 'SELECT * FROM users WHERE name LIKE :name';
+    $like = 'jon' . '%';
+    $binds = [ ':name' => $like ];
 
-        $aR = Query::select($conn, $q, $binds);
+    $aR = Query::select($conn, $q, $binds);
+```
 
 
 ### TRANSACTION
 
-        try
-        {
-            $conn->beginTransaction();
-            $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
-            $aI2 = Query::insert($conn, 'INSERT INTO messages VALUES (m_id, message) VALUES (:m_id, :message)', [ ':m_id' => $aI['insertid'], ':message' => $message ]);
-            $conn->commit();
-        }
-        catch (PDOException $e)
-        {
-            echo $e->getMessage();
-            $conn->rollback();
-        }
+```php
+    try
+    {
+        $conn->beginTransaction();
+        $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+        $aI2 = Query::insert($conn, 'INSERT INTO messages VALUES (m_id, message) VALUES (:m_id, :message)', [ ':m_id' => $aI['insertid'], ':message' => $message ]);
+        $conn->commit();
+    }
+    catch (PDOException $e)
+    {
+        echo $e->getMessage();
+        $conn->rollback();
+    }
+```
 
 
 **Close**
 
-        $conn = null;
+```php
+    $conn = null;
+```
 
 
 ## License
