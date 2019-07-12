@@ -123,7 +123,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
         Array
         (
-            [insert] => true          # update succeeded
+            [insert] => true          # insert succeeded
             [numinserts] => 1         # 1 insert
             [insertid] => 101         # lastInsertId()
             [error] => null           # no errors
