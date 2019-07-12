@@ -1,19 +1,19 @@
 
-# MySQL PDO
+# MySQL PDO (MySQLi)
 
 
-#### PHP MySQL-PDO prepared statement helper class.
+#### PHP MySQLi prepared statement helper class.
 
 
 ## Purpose
 
-Reduce the amount of PDO prepared statement boilerplate code needed in a legacy MySQL website conversion.
+Reduce the amount of MySQLi prepared statement boilerplate code needed in a legacy MySQL website conversion.
 
 
 ## Aims
 
 + Reduce repetitive inline code.
-+ Bind prepared statement parameters reasonably easily, with PDO data-type constants handled automatically.
++ Bind prepared statement parameters reasonably easily.
 + Allow SQL queries of varying complexity with varying numbers of bound parameters.
 + Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
 + Override the requirement for bound parameters in SELECT queries which have no variable inputs.
@@ -26,13 +26,13 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### Legacy Code
 
 ```php
-    $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
+    $q = "SELECT template FROM placements WHERE placementID = $pid"; // unsanitized $pid
 
     if (mysql_query($q))
     {
         if (mysql_num_rows($q) > 0)
         {
-            $t = mysql_result($q, 0, 'template');
+            $template = mysql_result($q, 0, 'template');
         }
     }
 ```
@@ -40,12 +40,12 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### Conversion
 
 ```php
-    $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
-    $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
+    $q = 'SELECT template FROM placements WHERE placementID = ?';    // placeholder for bound variable
+    $r = Query::select($conn, $q, [ $pid ], false);                  // bind variable(s) in array
 
     if ($r['numrows'] > 0)
     {
-        $t = $r['results']['template'];
+        $template = $r['results']['template'];
     }
 ```
 
@@ -59,35 +59,30 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
     $host = 'localhost'; $db = 'accounts'; $un = 'test'; $pw = 'password';
 
-    try
-    {
-        $conn = new PDO("mysql:host={$host};dbname={$db};charset=utf8", $un, $pw);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    }
-    catch (PDOException $e)
-    {
-        die($e->getMessage());
-    }
+    $conn = new mysqli($host, $un, $pw, $db);
+    $conn->set_charset('utf-8');
+    if ($conn->connect_errno) {die('conn failed: ' . $conn->connect_errno . ') ' . $conn->connect_error);}
 ```
 
 
 ### SELECT
 
 ```php
-    $q = 'SELECT name, email FROM users WHERE uid = :uid';
-    $aR = Query::select($conn, $q, [ ':uid' => $user_id ], false);
+    $q = 'SELECT name, email FROM users WHERE userID = ?';
+    $aR = Query::select($conn, $q, [ $user_id ], false);
         /* 'false' used to return single result row, as in query intention; default is 'true' returning multiple rows from a suitable query */
-
-    if ($aR['results'])
-    {
-        foreach ($aR as $aRow)
-        {
-            echo $aRow['name'];
-            ...
+    var_dump($aR);
 
     /* no parameters */
     $q = 'SELECT name, email FROM users';
     $aR = Query::select($conn, $q, null, true, false);
+
+    if ($aR['results'])
+    {
+        foreach ($aR['results'] as $aRow)
+        {
+            echo $aRow['name'] . ' | ' . $aRow['email'];
+            ...
 ```
 
         Array
@@ -96,14 +91,12 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
             (
                 [0] => Array
                 (
-                    [id] => 1
                     [name] => ...
                     [email] => ...
                 )
 
                 [1] => Array
                 (
-                    [id] => 2
                     [name] => ...
                     [email] => ...
                 )
@@ -118,12 +111,12 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### INSERT
 
 ```php
-    $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+    $aI = Query::insert($conn, 'INSERT INTO users (name, email) VALUES (?, ?)', [ $name, $email ]);
 ```
 
         Array
         (
-            [insert] => true          # update succeeded
+            [insert] => true          # insert succeeded
             [numinserts] => 1         # 1 insert
             [insertid] => 101         # lastInsertId()
             [error] => null           # no errors
@@ -133,7 +126,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### UPDATE
 
 ```php
-    $aU = Query::update($conn, 'UPDATE users SET email = :e WHERE name = :n', [ ':e' => $email, ':n' => $name ]);
+    $aU = Query::update($conn, 'UPDATE users SET email = ? WHERE name = ?', [ $email, $name ]);
         /* parameter names can be anything providing SQL and array definitions match */
 
     if ($aU['update'])
@@ -145,7 +138,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### DELETE
 
 ```php
-    $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
+    $aD = Query::delete($conn, 'DELETE FROM messages WHERE messageID = ?', [ 3 ]);
         /* literal value bound instead of a variable */
 ```
 
@@ -160,9 +153,9 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### LIKE
 
 ```php
-    $q = 'SELECT * FROM users WHERE name LIKE :name';
+    $q = 'SELECT * FROM users WHERE name LIKE ?';
     $like = 'jon' . '%';
-    $binds = [ ':name' => $like ];
+    $binds = [ $like ];
 
     $aR = Query::select($conn, $q, $binds);
 ```
@@ -171,16 +164,13 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### TRANSACTION
 
 ```php
-    try
+    $conn->begin_transaction();
+    $aI = Query::insert($conn, 'INSERT INTO users (name, email) VALUES (?, ?)', [ $name, $email ]);
+    $aI2 = Query::insert($conn, 'INSERT INTO messages (messageID, message) VALUES (?, ?)', [ $aI['insertid'], $message ]);
+    $conn->commit();
+
+    if ($aI['numinserts'] === 0 || $aI2['numinserts'] === 0)
     {
-        $conn->beginTransaction();
-        $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
-        $aI2 = Query::insert($conn, 'INSERT INTO messages VALUES (m_id, message) VALUES (:m_id, :message)', [ ':m_id' => $aI['insertid'], ':message' => $message ]);
-        $conn->commit();
-    }
-    catch (PDOException $e)
-    {
-        echo $e->getMessage();
         $conn->rollback();
     }
 ```
@@ -189,10 +179,10 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 **Close**
 
 ```php
-    $conn = null;
+    $conn->close();
 ```
 
 
 ## License
 
-MySQL PDO is released under the [GPL v.3](https://www.gnu.org/licenses/gpl-3.0.html).
+MySQL PDO (MySQLi) is released under the [GPL v.3](https://www.gnu.org/licenses/gpl-3.0.html).
