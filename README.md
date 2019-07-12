@@ -26,13 +26,13 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### Legacy Code
 
 ```php
-    $q = "SELECT template FROM placements WHERE placementID = $pid"; // potentially unsanitized $pid
+    $q = "SELECT template FROM placements WHERE placementID = $pid"; // unsanitized $pid
 
     if (mysql_query($q))
     {
         if (mysql_num_rows($q) > 0)
         {
-            $t = mysql_result($q, 0, 'template');
+            $template = mysql_result($q, 0, 'template');
         }
     }
 ```
@@ -45,7 +45,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
     if ($r['numrows'] > 0)
     {
-        $t = $r['results']['template'];
+        $template = $r['results']['template'];
     }
 ```
 
@@ -74,20 +74,22 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### SELECT
 
 ```php
-    $q = 'SELECT name, email FROM users WHERE uid = :uid';
+    $q = 'SELECT name, email FROM users WHERE userID = :uid';
     $aR = Query::select($conn, $q, [ ':uid' => $user_id ], false);
         /* 'false' used to return single result row, as in query intention; default is 'true' returning multiple rows from a suitable query */
-
-    if ($aR['results'])
-    {
-        foreach ($aR as $aRow)
-        {
-            echo $aRow['name'];
-            ...
+    var_dump($aR);
 
     /* no parameters */
     $q = 'SELECT name, email FROM users';
     $aR = Query::select($conn, $q, null, true, false);
+
+    if ($aR['results'])
+    {
+        foreach ($aR['results'] as $aRow)
+        {
+            echo $aRow['name'] . ' | ' . $aRow['email'];
+            ...
+
 ```
 
         Array
@@ -96,14 +98,12 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
             (
                 [0] => Array
                 (
-                    [id] => 1
                     [name] => ...
                     [email] => ...
                 )
 
                 [1] => Array
                 (
-                    [id] => 2
                     [name] => ...
                     [email] => ...
                 )
@@ -118,7 +118,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### INSERT
 
 ```php
-    $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+    $aI = Query::insert($conn, 'INSERT INTO users (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
 ```
 
         Array
@@ -145,7 +145,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 ### DELETE
 
 ```php
-    $aD = Query::delete($conn, 'DELETE FROM messages WHERE source = :s', [ ':s' => 3 ]);
+    $aD = Query::delete($conn, 'DELETE FROM messages WHERE messageID = :id', [ ':id' => 3 ]);
         /* literal value bound instead of a variable */
 ```
 
@@ -174,8 +174,8 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
     try
     {
         $conn->beginTransaction();
-        $aI = Query::insert($conn, 'INSERT INTO users VALUES (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
-        $aI2 = Query::insert($conn, 'INSERT INTO messages VALUES (m_id, message) VALUES (:m_id, :message)', [ ':m_id' => $aI['insertid'], ':message' => $message ]);
+        $aI = Query::insert($conn, 'INSERT INTO users (name, email) VALUES (:name, :email)', [ ':name' => $name, ':email' => $email ]);
+        $aI2 = Query::insert($conn, 'INSERT INTO messages (messageID, message) VALUES (:id, :message)', [ ':id' => $aI['insertid'], ':message' => $message ]);
         $conn->commit();
     }
     catch (PDOException $e)
