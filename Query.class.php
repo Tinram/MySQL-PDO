@@ -7,7 +7,7 @@ declare(strict_types = 1);
 final class Query
 {
     /**
-        * PDO query class to process prepared statement parameterised queries and reduce repetitive inline code.
+        * MySQLi query class to process prepared statement parameterised queries and reduce repetitive inline code.
         *
         * Allows flexible SQL statements and multiple database connections.
         *
@@ -15,7 +15,7 @@ final class Query
         *
         * @author         Martin Latter <copysense.co.uk>
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.10
+        * @version        0.11b
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -33,11 +33,10 @@ final class Query
     /**
         * Simple method for prepared statement SELECTs.
         *
-        * @param   PDO $oConnection, database connection
+        * @param   mysqli $oConnection, database connection
         * @param   string $sQuery, SQL query, usually with parameter-placeholders
-        * @param   array $aParamValues, parameter key-value pairs e.g. [':user_id' => $user_id]
+        * @param   array $aParamValues [$user_id, ...]
         *           else null if no parameters used in query
-        *           multiple instances of a parameter are bound from a single key
         * @param   bool $bFetchAll, true: fetch complete resultset; false: fetch just one row
         * @param   bool $bPlaceholders, false: skip binding of parameters if SQL query has none
         * @param   bool $bDebug, toggle query debugging information
@@ -45,9 +44,10 @@ final class Query
         * @return  array [ 'results' => array | false, 'numrows' => integer ]
     */
 
-    public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, bool $bPlaceholders = true, bool $bDebug = false): array
+    public static function select(mysqli &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, bool $bPlaceholders = true, bool $bDebug = false): array
     {
         $aParamErrors = [];
+        $aResults = [];
 
         if (is_null($oConnection))
         {
@@ -69,9 +69,11 @@ final class Query
         {
             foreach ($aParamValues as $sParameter => $v)
             {
-                if (strpos($sQuery, $sParameter) === false)
+                $iPH = preg_match_all('/\?/', $sQuery, $aM);
+
+                if (sizeof($aM[0]) !== sizeof($aParamValues))
                 {
-                    $aParamErrors[] = $sParameter;
+                    $aParamErrors[] = join(',', $aM[0]) . ' | ' . join(',', $aParamValues);
                 }
             }
         }
@@ -79,8 +81,7 @@ final class Query
         if ( ! empty($aParamErrors))
         {
             echo __METHOD__ . '(): bound parameter array values and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
-            echo 'erroneous parameters:' . self::$sEOL;
-            echo join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
+            echo 'erroneous parameters: ' . join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
         }
 
         if ($bDebug)
@@ -91,58 +92,57 @@ final class Query
             echo self::$sEOL;
         }
 
-        $iNumRows = 0;
+        $oStmt = $oConnection->stmt_init();
+        $oStmt->prepare($sQuery);
 
-        try
+        if ($bPlaceholders)
         {
-            $oStmt = $oConnection->prepare($sQuery);
+            $aBindParams = [];
+            $aBindParams[0] = '';
 
-            if ($bPlaceholders) # provides option to skip if query has no placeholders
+            foreach ($aParamValues as $param => $v)
             {
-                foreach ($aParamValues as $param => &$value)
-                {
-                    $iPDOType = self::getPDOType($value);
-                    $oStmt->bindParam($param, $value);
-                }
+                $aBindParams[0] .= self::getMySQLiType($v);
+                $aBindParams[] = &$aParamValues[$param];
             }
 
-            $oStmt->execute();
-
-            $iNumRows = $oStmt->rowCount();
-
-            if ($bFetchAll)
-            {
-                $aResults = $oStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-            else
-            {
-                $aResults = $oStmt->fetch(PDO::FETCH_ASSOC);
-            }
-
-            $oStmt->closeCursor();
-
-            return [ 'results' => $aResults, 'numrows' => $iNumRows ];
+            call_user_func_array( [$oStmt, 'bind_param'], $aBindParams ); # obj, fn()
         }
-        catch (PDOException $e)
+
+        $oStmt->execute();
+
+        $oResults = $oStmt->get_result();
+        $iNumRows = $oResults->num_rows;
+
+        if ($bFetchAll)
         {
-            echo $e->getMessage();
+            $aResults = $oResults->fetch_all(MYSQLI_ASSOC);
         }
+        else
+        {
+            $aResults = $oResults->fetch_assoc();
+        }
+
+        $oStmt->free_result();
+        $oStmt->close();
+
+        return [ 'results' => $aResults, 'numrows' => $iNumRows ];
     }
 
 
     /**
         * Simple main method shared between UPDATE, INSERT, and DELETE.
         *
-        * @param   PDO $oConnection, database connection
+        * @param   mysqli $oConnection, database connection
         * @param   string $sQuery, SQL query with placeholders
-        * @param   array $aParamValues, key-value pairs e.g. [':user_id' => $user_id]
+        * @param   array $aParamValues [$user_id, ...]
         * @param   string $sAction, for aliases
         * @param   bool $bDebug, toggle query debugging information
         *
         * @return  array
     */
 
-    public static function main(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, string $sAction = '', bool $bDebug = false): array
+    public static function main(mysqli &$oConnection = null, string $sQuery = '', array $aParamValues = null, string $sAction = '', bool $bDebug = false): array
     {
         $sAction = explode('::', $sAction)[1];
 
@@ -152,53 +152,52 @@ final class Query
         $bUpdate = false;
         $sError = null;
 
-        try
+        $oStmt = $oConnection->stmt_init();
+        $oStmt->prepare($sQuery);
+
+        $aBindParams = [];
+        $aBindParams[0] = '';
+
+        foreach ($aParamValues as $param => $v)
         {
-            $oStmt = $oConnection->prepare($sQuery);
+             $aBindParams[0] .= self::getMySQLiType($v);
+             $aBindParams[] = &$aParamValues[$param];
+        }
 
-            foreach ($aParamValues as $param => &$value)
+        call_user_func_array( [$oStmt, 'bind_param'], $aBindParams );
+
+        if ($oStmt->execute())
+        {
+            $iNumUpdates = $oStmt->affected_rows;
+
+            if ($iNumUpdates > 0)
             {
-                $iPDOType = self::getPDOType($value);
-                $oStmt->bindParam($param, $value, $iPDOType);
+                $bUpdate = true;
             }
 
-            if ($oStmt->execute())
+            if ($sAction === 'insert')
             {
-                $iNumUpdates = $oStmt->rowCount();
-
-                if ($iNumUpdates > 0)
-                {
-                    $bUpdate = true;
-                }
-
-                if ($sAction === 'insert')
-                {
-                    $iLastInsertID = $oConnection->lastInsertId();
-                }
-            }
-            else
-            {
-                $sError = $oStmt->error;
-            }
-
-            $oStmt->closeCursor();
-
-            if ($sAction === 'update')
-            {
-                return [ 'update' => $bUpdate, 'numupdates' => $iNumUpdates, 'error' => $sError ];
-            }
-            else if ($sAction === 'insert')
-            {
-                return [ 'insert' => $bUpdate, 'numinserts' => $iNumUpdates, 'insertid' => $iLastInsertID, 'error' => $sError ];
-            }
-            else if ($sAction === 'delete')
-            {
-                return [ 'delete' => $bUpdate, 'numdeletes' => $iNumUpdates, 'error' => $sError ];
+                $iLastInsertID = $oStmt->insert_id;
             }
         }
-        catch (PDOException $e)
+        else
         {
-            echo $e->getMessage();
+            $sError = $oStmt->error;
+        }
+
+        $oStmt->close();
+
+        if ($sAction === 'update')
+        {
+            return [ 'update' => $bUpdate, 'numupdates' => $iNumUpdates, 'error' => $sError ];
+        }
+        else if ($sAction === 'insert')
+        {
+            return [ 'insert' => $bUpdate, 'numinserts' => $iNumUpdates, 'insertid' => $iLastInsertID, 'error' => $sError ];
+        }
+        else if ($sAction === 'delete')
+        {
+            return [ 'delete' => $bUpdate, 'numdeletes' => $iNumUpdates, 'error' => $sError ];
         }
     }
 
@@ -207,7 +206,7 @@ final class Query
         * Method for INSERT queries.
     */
 
-    public static function insert(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function insert(mysqli &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
@@ -217,7 +216,7 @@ final class Query
         * Method for UPDATE queries.
     */
 
-    public static function update(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function update(mysqli &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
@@ -227,49 +226,48 @@ final class Query
         * Method for DELETE queries.
     */
 
-    public static function delete(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function delete(mysqli &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
 
 
     /**
-        * Helper method to allocate PDO types for binding variables.
+        * Helper method to allocate data-types for binding variables.
         *
         * @param   mixed $value
-        * @return  integer, PDO constant
+        * @return  string, PDO constant
     */
 
-    private static function getPDOType($value): int
+    private static function getMySQLiType($value): string
     {
         $sVarType = gettype($value);
-        $iPDOType = 0;
+        $sMType = '';
 
         switch ($sVarType)
         {
             case 'string':
-            case 'float':
-            case 'double':
-                $iPDOType = PDO::PARAM_STR;
+                $sMType = 's';
             break;
 
             case 'integer':
-                $iPDOType = PDO::PARAM_INT;
+                $sMType = 'i';
             break;
 
-            case 'boolean':
-                $iPDOType = PDO::PARAM_BOOL;
+            case 'float':
+            case 'double':
+                $sMType = 'd';
             break;
 
-            case 'NULL':
-                $iPDOType = PDO::PARAM_NULL;
+            case 'binary':
+                $sMType = 'b';
             break;
 
             default:
-                die('Unrecognised PDO datatype in ' . __METHOD__ . '()' . self::$sEOL);
+                die('Unrecognised mysqli data-type in ' . __METHOD__ . '()' . self::$sEOL);
         }
 
-        return $iPDOType;
+        return $sMType;
     }
 
 
@@ -331,17 +329,18 @@ final class Query
 
         foreach ($aArgs[2] as $sParameter => $v)
         {
-            if (strpos($aArgs[1], $sParameter) === false)
+            $iPH = preg_match_all('/\?/', $aArgs[1], $aM);
+
+            if (sizeof($aM[0]) !== sizeof($aArgs[2]))
             {
-                $aParamErrors[] = $sParameter;
+                $aParamErrors[] = join(',', $aM[0]) . ' | ' . join(',', $aArgs[2]);
             }
         }
 
         if ( ! empty($aParamErrors))
         {
-            echo __CLASS__ . '::' . $sMethodName . '(): bound parameter array values and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
-            echo 'erroneous parameters:' . self::$sEOL;
-            echo join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
+            echo __CLASS__ . '::' . $sMethodName . '(): bound parameter number and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
+            echo 'erroneous parameters: ' . join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
         }
 
         if ($aArgs[4])
