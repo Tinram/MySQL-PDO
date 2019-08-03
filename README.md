@@ -7,7 +7,8 @@
 
 ## Purpose
 
-Reduce the amount of MySQLi prepared statement boilerplate code needed in a legacy MySQL website conversion.
+Provide concise and consistent usage of MySQLi CRUD statements.  
+Conversion to MySQLi of [MySQL PDO](https://github.com/Tinram/MySQL-PDO/tree/master).
 
 
 ## Aims
@@ -18,7 +19,7 @@ Reduce the amount of MySQLi prepared statement boilerplate code needed in a lega
 + Support the MySQL CRUD statements &ndash; INSERT, SELECT, UPDATE, DELETE.
 + Override the requirement for bound parameters in SELECT queries which have no variable inputs.
 + Capture some erroneous calls before MySQL or PHP start complaining.
-+ Able to use different database connections in separate queries.
++ Ability to use different database connections in separate queries.
 
 
 ## Conversion Example
