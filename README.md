@@ -15,7 +15,7 @@ Reduce the amount of MySQLi prepared statement boilerplate code needed in a lega
 + Reduce repetitive inline code.
 + Bind prepared statement parameters reasonably easily.
 + Allow SQL queries of varying complexity with varying numbers of bound parameters.
-+ Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
++ Support the MySQL CRUD statements &ndash; INSERT, SELECT, UPDATE, DELETE.
 + Override the requirement for bound parameters in SELECT queries which have no variable inputs.
 + Capture some erroneous calls before MySQL or PHP start complaining.
 + Able to use different database connections in separate queries.
@@ -26,7 +26,7 @@ Reduce the amount of MySQLi prepared statement boilerplate code needed in a lega
 ### Legacy Code
 
 ```php
-    $q = "SELECT template FROM placements WHERE placementID = $pid"; // unsanitized $pid
+    $q = "SELECT template FROM placements WHERE placementID = $pid";    // unsanitized $pid
 
     if (mysql_query($q))
     {
@@ -40,8 +40,8 @@ Reduce the amount of MySQLi prepared statement boilerplate code needed in a lega
 ### Conversion
 
 ```php
-    $q = 'SELECT template FROM placements WHERE placementID = ?';    // placeholder for bound variable
-    $r = Query::select($conn, $q, [ $pid ], false);                  // bind variable(s) in array
+    $q = 'SELECT template FROM placements WHERE placementID = ?';    // '?' placeholder for bound variable
+    $r = Query::select($conn, $q, [ $pid ], false);                  // bind variable(s) within array
 
     if ($r['numrows'] > 0)
     {
@@ -127,7 +127,6 @@ Reduce the amount of MySQLi prepared statement boilerplate code needed in a lega
 
 ```php
     $aU = Query::update($conn, 'UPDATE users SET email = ? WHERE name = ?', [ $email, $name ]);
-        /* parameter names can be anything providing SQL and array definitions match */
 
     if ($aU['update'])
     {
