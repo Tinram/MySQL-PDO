@@ -7,7 +7,12 @@
 
 ## Purpose
 
-Reduce the amount of PDO prepared statement boilerplate code needed in a legacy MySQL website conversion.
+Provide concise and consistent usage of MySQL PDO CRUD statements.
+
+
+## Background
+
+Created to reduce the amount of PDO prepared statement boilerplate code needed in a legacy MySQL website conversion.
 
 
 ## Aims
@@ -15,10 +20,10 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 + Reduce repetitive inline code.
 + Bind prepared statement parameters reasonably easily, with PDO data-type constants handled automatically.
 + Allow SQL queries of varying complexity with varying numbers of bound parameters.
-+ Support the MySQL CRUD statements - INSERT, SELECT, UPDATE, DELETE.
++ Support the MySQL CRUD statements &ndash; INSERT, SELECT, UPDATE, DELETE.
 + Override the requirement for bound parameters in SELECT queries which have no variable inputs.
 + Capture some erroneous calls before MySQL or PHP start complaining.
-+ Able to use different database connections in separate queries.
++ Ability to use different database connections in separate queries.
 
 
 ## Conversion Example
@@ -41,7 +46,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ```php
     $q = 'SELECT template FROM placements WHERE placementID = :pid'; // placeholder for bound variable
-    $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) in array
+    $r = Query::select($conn, $q, [ ':pid' => $pid ], false);        // bind variable(s) within array
 
     if ($r['numrows'] > 0)
     {
@@ -146,7 +151,7 @@ Reduce the amount of PDO prepared statement boilerplate code needed in a legacy 
 
 ```php
     $aD = Query::delete($conn, 'DELETE FROM messages WHERE messageID = :id', [ ':id' => 3 ]);
-        /* literal value bound instead of a variable */
+        /* literal value used instead of a variable */
 ```
 
         Array
