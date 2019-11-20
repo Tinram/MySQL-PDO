@@ -13,7 +13,7 @@ final class Query
         *
         * Coded to PHP 7.1
         *
-        * @author         Martin Latter <copysense.co.uk>
+        * @author         Martin Latter
         * @copyright      Martin Latter, 27/11/2017
         * @version        0.10
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
