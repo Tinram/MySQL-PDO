@@ -14,7 +14,7 @@ final class Query
         *
         * @author         Martin Latter
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.11
+        * @version        0.12
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
@@ -86,7 +86,7 @@ final class Query
             echo join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
         }
 
-        if ($bDebug)
+        if ($bDebug || self::EXTENDED_DEBUG)
         {
             echo __METHOD__ . '(DEBUG)' . self::$sEOL;
             echo self::$sEOL . $sQuery . self::$sEOL . self::$sEOL;
