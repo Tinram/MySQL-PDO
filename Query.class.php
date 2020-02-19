@@ -1,7 +1,6 @@
 <?php
 
-
-declare(strict_types = 1);
+declare(strict_types=1);
 
 
 final class Query
@@ -11,16 +10,20 @@ final class Query
         *
         * Allows flexible SQL statements and multiple database connections.
         *
-        * Coded to PHP 7.1
+        * Coded to PHP 7.2
         *
         * @author         Martin Latter
         * @copyright      Martin Latter, 27/11/2017
-        * @version        0.10
+        * @version        0.11
         * @license        GNU GPL version 3.0 (GPL v3); http://www.gnu.org/licenses/gpl.html
         * @link           https://github.com/Tinram/MySQL-PDO.git
     */
 
 
+    /** @const EXTENDED_DEBUG, toggle statement object dump - useful for connection issues */
+    const EXTENDED_DEBUG = false;
+
+    /** @var string $sEOL, EOL type */
     private static $sEOL = (PHP_SAPI === 'cli') ? PHP_EOL : '<br>';
 
 
@@ -35,17 +38,17 @@ final class Query
         *
         * @param   PDO $oConnection, database connection
         * @param   string $sQuery, SQL query, usually with parameter-placeholders
-        * @param   array $aParamValues, parameter key-value pairs e.g. [':user_id' => $user_id]
+        * @param   array<mixed> $aParamValues, parameter key-value pairs e.g. [':user_id' => $user_id]
         *           else null if no parameters used in query
         *           multiple instances of a parameter are bound from a single key
         * @param   bool $bFetchAll, true: fetch complete resultset; false: fetch just one row
         * @param   bool $bPlaceholders, false: skip binding of parameters if SQL query has none
         * @param   bool $bDebug, toggle query debugging information
         *
-        * @return  array [ 'results' => array | false, 'numrows' => integer ]
+        * @return  array<mixed>|null [ 'results' => array | false, 'numrows' => integer ]
     */
 
-    public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bFetchAll = true, bool $bPlaceholders = true, bool $bDebug = false): array
+    public static function select(PDO &$oConnection = null, string $sQuery = '', array $aParamValues, bool $bFetchAll = true, bool $bPlaceholders = true, bool $bDebug = false): ?array
     {
         $aParamErrors = [];
 
@@ -53,7 +56,7 @@ final class Query
         {
             echo __METHOD__ . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
-        else if (empty($sQuery))
+        else if ($sQuery === '')
         {
             echo __METHOD__ . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
@@ -61,7 +64,7 @@ final class Query
         {
             echo __METHOD__ . '(): SQL may be wrong - calling select method, but no SELECT keyword found in $sQuery.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
         }
-        else if (empty($aParamValues) && $bPlaceholders)
+        else if ($bPlaceholders && (count($aParamValues) === 0))
         {
             echo __METHOD__ . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
@@ -76,7 +79,7 @@ final class Query
             }
         }
 
-        if ( ! empty($aParamErrors))
+        if (count($aParamErrors) !== 0)
         {
             echo __METHOD__ . '(): bound parameter array values and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
             echo 'erroneous parameters:' . self::$sEOL;
@@ -108,6 +111,11 @@ final class Query
 
             $oStmt->execute();
 
+            if (self::EXTENDED_DEBUG)
+            {
+                var_dump($oStmt);
+            }
+
             $iNumRows = $oStmt->rowCount();
 
             if ($bFetchAll)
@@ -126,6 +134,7 @@ final class Query
         catch (PDOException $e)
         {
             echo $e->getMessage();
+            return null;
         }
     }
 
@@ -135,14 +144,14 @@ final class Query
         *
         * @param   PDO $oConnection, database connection
         * @param   string $sQuery, SQL query with placeholders
-        * @param   array $aParamValues, key-value pairs e.g. [':user_id' => $user_id]
+        * @param   array<mixed> $aParamValues, key-value pairs e.g. [':user_id' => $user_id]
         * @param   string $sAction, for aliases
         * @param   bool $bDebug, toggle query debugging information
         *
-        * @return  array
+        * @return  array<mixed>|null
     */
 
-    public static function main(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, string $sAction = '', bool $bDebug = false): array
+    public static function main(PDO &$oConnection = null, string $sQuery = '', array $aParamValues, string $sAction = '', bool $bDebug = false): ?array
     {
         $sAction = explode('::', $sAction)[1];
 
@@ -199,15 +208,23 @@ final class Query
         catch (PDOException $e)
         {
             echo $e->getMessage();
+            return null;
         }
     }
 
 
     /**
         * Method for INSERT queries.
+        *
+        * @param   PDO $oConnection, database connection
+        * @param   string $sQuery, SQL query with placeholders
+        * @param   array<mixed> $aParamValues, key-value pairs
+        * @param   bool $bDebug, toggle query debugging information
+        *
+        * @return  array<mixed>|null
     */
 
-    public static function insert(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function insert(PDO &$oConnection = null, string $sQuery = '', array $aParamValues, bool $bDebug = false): ?array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
@@ -215,9 +232,16 @@ final class Query
 
     /**
         * Method for UPDATE queries.
+        *
+        * @param   PDO $oConnection, database connection
+        * @param   string $sQuery, SQL query with placeholders
+        * @param   array<mixed> $aParamValues, key-value pairs
+        * @param   bool $bDebug, toggle query debugging information
+        *
+        * @return  array<mixed>|null
     */
 
-    public static function update(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function update(PDO &$oConnection = null, string $sQuery = '', array $aParamValues, bool $bDebug = false): ?array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
@@ -225,9 +249,16 @@ final class Query
 
     /**
         * Method for DELETE queries.
+        *
+        * @param   PDO $oConnection, database connection
+        * @param   string $sQuery, SQL query with placeholders
+        * @param   array<mixed> $aParamValues, key-value pairs
+        * @param   bool $bDebug, toggle query debugging information
+        *
+        * @return array<mixed>|null
     */
 
-    public static function delete(PDO &$oConnection = null, string $sQuery = '', array $aParamValues = null, bool $bDebug = false): array
+    public static function delete(PDO &$oConnection = null, string $sQuery = '', array $aParamValues, bool $bDebug = false): ?array
     {
         return self::main($oConnection, $sQuery, $aParamValues, __METHOD__, $bDebug);
     }
@@ -237,6 +268,7 @@ final class Query
         * Helper method to allocate PDO types for binding variables.
         *
         * @param   mixed $value
+        *
         * @return  integer, PDO constant
     */
 
@@ -277,25 +309,26 @@ final class Query
         * Helper method for erroneous arguments.
         *
         * @param   string $sMethodName, identifier of which method error occurred
-        * @param   array $aArgs, arguments passed to invoked method
+        * @param   array<mixed> $aArgs, arguments passed to invoked method
+        *
         * @return  void
     */
 
-    private static function checkArgs(string $sMethodName = '', array $aArgs = []): void    /* remove :void for PHP 7.0 */
+    private static function checkArgs(string $sMethodName = '', array $aArgs = []): void
     {
         if (is_null($aArgs[0]))
         {
             echo __CLASS__ . '::' . $sMethodName . '(): $oConnection parameter is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
-        else if (empty($aArgs[1]))
+        else if ($aArgs[1] === '')
         {
             echo __CLASS__ . '::' . $sMethodName . '(): $sQuery SQL string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
-        else if (empty($aArgs[2]))
+        else if (count($aArgs[2]) === 0)
         {
             echo __CLASS__ . '::' . $sMethodName . '(): $aParamValues array to bind is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
-        else if (empty($aArgs[3]))
+        else if ($aArgs[3] === '')
         {
             echo __CLASS__ . '::' . $sMethodName . '(): $sAction string is empty! (' . __FILE__ . ')' . self::$sEOL;
         }
@@ -337,14 +370,14 @@ final class Query
             }
         }
 
-        if ( ! empty($aParamErrors))
+        if (count($aParamErrors) !== 0)
         {
             echo __CLASS__ . '::' . $sMethodName . '(): bound parameter array values and SQL mismatch.' . self::$sEOL . '(' . __FILE__ . ')' . self::$sEOL;
             echo 'erroneous parameters:' . self::$sEOL;
             echo join(self::$sEOL, $aParamErrors) . self::$sEOL . self::$sEOL;
         }
 
-        if ($aArgs[4])
+        if ($aArgs[4] === true)
         {
             echo __CLASS__ . '::' . $sMethodName . '(DEBUG)' . self::$sEOL;
             echo self::$sEOL . $aArgs[1] . self::$sEOL . self::$sEOL;
